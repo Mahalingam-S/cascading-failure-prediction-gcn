@@ -238,7 +238,8 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## Author
 
 **Mahalingam Shanmugam**  
-Amrita Vishwa Vidyapeetham  
+Amrita Vishwa Vidyapeetham
+Ettimadai - 641112 , Coimbatore
 Email: [mahalingamshanmugam12@gmail.com](mailto:mahalingamshanmugam12@gmail.com) 
 Email: [mahalsansu43@gmail.com](mailto:mahalsansu43@gmail.com)
 GitHub: [@Mahalingam-S](https://github.com/Mahalingam-S)
