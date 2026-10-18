@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabGuard GCN | Predicting Cascading Failures in Computer Laboratories</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0F172A;
+      --bg-secondary: #1E293B;
+      --bg-card: #1E293B;
+      --border-card: #334155;
+      --border-subtle: #475569;
+      --accent-blue: #2563EB;
+      --accent-cyan: #0284C7;
+      --accent-purple: #7C3AED;
+      --accent-green: #059669;
+      --accent-amber: #D97706;
+      --accent-red: #DC2626;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --font-sans: 'Times New Roman', Times, 'Tinos', Georgia, serif;
+      --font-serif: 'Times New Roman', Times, 'Tinos', Georgia, serif;
+      --font-mono: 'Times New Roman', Times, 'Tinos', Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Times New Roman', Times, 'Tinos', Georgia, serif;
+    }
+
+    body, button, input, select, textarea, table, h1, h2, h3, h4, h5, h6, p, span, div, a, label {
+      font-family: 'Times New Roman', Times, 'Tinos', Georgia, serif !important;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Bar */
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-card);
+      padding: 0.9rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: #1E3A8A;
+      border: 1px solid #3B82F6;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #93C5FD;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #FFFFFF;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .badge-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.3rem 0.8rem;
+      background: rgba(5, 150, 105, 0.15);
+      border: 1px solid rgba(5, 150, 105, 0.4);
+      color: #34D399;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #34D399;
+      border-radius: 50%;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+      max-width: 1720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* KPI Summary Row */
+    .kpi-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-top: 3px solid var(--accent-blue);
+      border-radius: 6px;
+      padding: 1rem 1.3rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .kpi-card:nth-child(2) {
+      border-top-color: #0284C7;
+    }
+    .kpi-card:nth-child(3) {
+      border-top-color: #059669;
+    }
+    .kpi-card:nth-child(4) {
+      border-top-color: #D97706;
+    }
+
+    .kpi-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .kpi-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: #FFFFFF;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Center Stage: Graph Canvas & Controls */
+    .center-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .toolbar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 6px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid transparent;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: #2563EB;
+      color: #FFFFFF;
+      border-color: #1D4ED8;
+    }
+    .btn-primary:hover {
+      background: #1D4ED8;
+    }
+
+    .btn-danger {
+      background: #DC2626;
+      color: #FFFFFF;
+      border-color: #B91C1C;
+    }
+    .btn-danger:hover {
+      background: #B91C1C;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin {
+      animation: spin 0.75s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .trigger-select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Graph Canvas Box */
+    .graph-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      height: 580px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    #topologyCanvas {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    /* Topology Legend Strip (Positioned outside canvas so it never obscures any graph nodes) */
+    .topology-legend-strip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1.25rem;
+      margin-top: 0.85rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-main);
+      font-size: 0.8rem;
+    }
+
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* Side Panel */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 0.6rem;
+    }
+
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .telemetry-label {
+      color: var(--text-muted);
+    }
+
+    .telemetry-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    .gauge-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    /* Recommendations */
+    .rec-item {
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid var(--accent-amber);
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      margin-bottom: 0.6rem;
+      color: #FDE68A;
+    }
+
+    .rec-item.critical {
+      background: rgba(239, 68, 68, 0.08);
+      border-left-color: var(--accent-red);
+      color: #FCA5A5;
+    }
+
+    /* Tabs Section */
+    .bottom-section {
+      grid-column: 1 / -1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #FFFFFF;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.75rem 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-card);
+      font-family: var(--font-mono);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge-model {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    .badge-gcn { background: rgba(59, 130, 246, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-gat { background: rgba(139, 92, 246, 0.2); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .badge-mlp { background: rgba(245, 158, 11, 0.2); color: #FDE68A; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-heur { background: rgba(156, 163, 175, 0.2); color: #D1D5DB; }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-card);
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 1200px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .side-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+    }
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem;
+      }
+      .kpi-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .side-panel {
+        grid-template-columns: 1fr;
+      }
+      .toolbar-card {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">GCN</div>
+      <div class="brand-text">
+        <h1>Cascading Failure Risk Prediction</h1>
+        <p>Graph Convolutional Network Monitoring Console &bull; Campus Laboratory Infrastructure</p>
+      </div>
+    </div>
+    <div class="badge-status">
+      <span class="pulse-dot"></span>
+      <span>GCN Model Active &bull; Graph Synchronized</span>
+    </div>
+  </header>
+
+  <!-- Main Body -->
+  <main>
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <span class="kpi-label">Monitored Equipment</span>
+        <span class="kpi-value" id="kpiTotalNodes">48</span>
+        <span class="kpi-sub">Workstations, Switches, PDUs, UPS</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Dependency Edges</span>
+        <span class="kpi-value" id="kpiTotalEdges">157</span>
+        <span class="kpi-sub">Power feeds & Network links</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">GCN PR-AUC / ROC-AUC</span>
+        <span class="kpi-value" style="color: #60A5FA;" id="kpiRocAuc">0.911</span>
+        <span class="kpi-sub">0.818 ROC-AUC &bull; 90.1% Cascade Recall</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">At-Risk Equipment</span>
+        <span class="kpi-value" style="color: var(--accent-amber);" id="kpiAtRisk">0</span>
+        <span class="kpi-sub">Evaluated via graph convolution</span>
+      </div>
+    </div>
+
+    <!-- Center Stage -->
+    <div class="center-stage">
+      <div class="toolbar-card">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnGcnPredict" onclick="runGcnInference()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7z"/></svg>
+            Run GCN Risk Inference
+          </button>
+          <button class="btn btn-outline" id="btnReset" onclick="resetGraph()" title="Reset laboratory and refresh page">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Reset Laboratory
+          </button>
+        </div>
+
+        <div class="btn-group">
+          <label style="font-size: 0.8rem; color: var(--text-muted);">Trigger Node:</label>
+          <select id="triggerNodeSelect" class="trigger-select">
+            <option value="Power_UPS_Lab_1">Power: Rack UPS (Lab 1)</option>
+            <option value="Power_Main_PDU">Power: Campus Main PDU</option>
+            <option value="Switch_Core_01">Switch: Backbone Core Switch</option>
+            <option value="Switch_Dist_Lab_1">Switch: Distribution Switch Lab 1</option>
+            <option value="Switch_Access_Lab_1_Row1">Switch: Access Switch Lab 1 (Row 1)</option>
+          </select>
+          <button class="btn btn-danger" id="btnSimCascade" onclick="triggerCascadeSimulation()">
+            Trigger Failure Cascade
+          </button>
+        </div>
+      </div>
+
+      <!-- Graph Canvas -->
+      <div class="graph-container">
+        <svg id="topologyCanvas"></svg>
+      </div>
+
+      <!-- Topology Legend Strip (Positioned outside canvas to prevent covering Access Lab 1 Row or any nodes) -->
+      <div class="topology-legend-strip">
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-amber);"></span> Power Units (PDU/UPS)</div>
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-blue);"></span> Network Switches (Core/Dist)</div>
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-cyan);"></span> Edge Access Switches</div>
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-purple);"></span> Core Services / Servers</div>
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-green);"></span> Student Workstations</div>
+        <div class="legend-item"><span class="legend-color" style="background: var(--accent-red);"></span> Tripped / Cascaded Failure</div>
+      </div>
+    </div>
+
+    <!-- Side Inspector Panel -->
+    <div class="side-panel">
+      <!-- Node Inspector Card -->
+      <div class="panel-card" id="inspectorCard">
+        <div class="panel-title">
+          <span>Equipment Telemetry</span>
+          <span id="selectedNodeBadge" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 500;">Select Node</span>
+        </div>
+        <div id="inspectorContent">
+          <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 2rem 0;">
+            Click on any node in the laboratory topology to inspect live telemetry signals and dependency links.
+          </p>
+        </div>
+      </div>
+
+      <!-- Maintenance Recommendations Card -->
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>Preventive IT Actions</span>
+          <span style="font-size: 0.75rem; color: var(--accent-amber);">Automated Advice</span>
+        </div>
+        <div id="recommendationsList">
+          <div class="rec-item">
+            <strong>Active Alert:</strong> Switch Access Lab 1 Row 1 shows elevated error counter (54 CRC drops). GCN predicts 78.4% cascade risk to 10 downstream PCs.
+          </div>
+          <div class="rec-item">
+            <strong>Advisory:</strong> Rack UPS Lab 1 battery temperature is 41.2°C. Normal cooling operational.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benchmark Leaderboard -->
+    <div class="bottom-section">
+      <div class="nav-tabs">
+        <button class="tab-btn active">Model Performance Leaderboard</button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Model Architecture</th>
+              <th>Graph Aware?</th>
+              <th>Accuracy</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>F1-Score</th>
+              <th>ROC-AUC</th>
+              <th>PR-AUC</th>
+            </tr>
+          </thead>
+          <tbody id="metricsTableBody">
+            <tr>
+              <td><span class="badge-model badge-gcn">LabGCN (Graph Convolution)</span></td>
+              <td><strong style="color: var(--accent-green);">Yes (Spectral L2)</strong></td>
+              <td>0.8421</td>
+              <td>0.8872</td>
+              <td>0.9012</td>
+              <td>0.8941</td>
+              <td>0.8181</td>
+              <td>0.9106</td>
+            </tr>
+            <tr>
+              <td><span class="badge-model badge-gat">LabGAT (Graph Attention)</span></td>
+              <td><strong style="color: var(--accent-green);">Yes (Multi-Head)</strong></td>
+              <td>0.8437</td>
+              <td>0.8874</td>
+              <td>0.9033</td>
+              <td>0.8953</td>
+              <td>0.8324</td>
+              <td>0.9256</td>
+            </tr>
+            <tr>
+              <td><span class="badge-model badge-mlp">MLP Baseline (Telemetry Only)</span></td>
+              <td><span style="color: var(--accent-red);">No (Topology-blind)</span></td>
+              <td>0.8142</td>
+              <td>0.8836</td>
+              <td>0.8623</td>
+              <td>0.8728</td>
+              <td>0.7901</td>
+              <td>0.8929</td>
+            </tr>
+            <tr>
+              <td><span class="badge-model badge-heur">Degree Heuristic (IT Rule)</span></td>
+              <td>Partial (Degree only)</td>
+              <td>0.2838</td>
+              <td>0.6875</td>
+              <td>0.0578</td>
+              <td>0.1067</td>
+              <td>0.4530</td>
+              <td>0.7249</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Predicting Cascading Failures in Computer Laboratories &bull; Graph Convolutional Networks (GCN) &bull; University IT Operations</p>
+  </footer>
+
+  <!-- Interactive Graph & API Script -->
+  <script>
+    let graphData = { nodes: [], edges: [] };
+    let gcnPredictions = {};
+    let selectedNode = null;
+
+    // Load initial graph
+    async function loadTopology() {
+      try {
+        const res = await fetch('/api/topology');
+        graphData = await res.json();
+        document.getElementById('kpiTotalNodes').innerText = graphData.totalNodes;
+        document.getElementById('kpiTotalEdges').innerText = graphData.totalEdges;
+        renderSvgGraph();
+      } catch (err) {
+        console.error("Error loading topology:", err);
+      }
+    }
+
+    function renderSvgGraph(failedNodes = [], riskColors = null) {
+      const svg = document.getElementById('topologyCanvas');
+      svg.innerHTML = '';
+      const width = svg.clientWidth || 900;
+      const height = svg.clientHeight || 580;
+
+      // Hierarchical Layout
+      const pos = {};
+      const nodes = graphData.nodes;
+      
+      nodes.forEach((n) => {
+        let x = width / 2;
+        let y = height / 2;
+        const role = n.role || '';
+        const room = n.room || '';
+
+        if (role === 'main_pdu') {
+          x = width * 0.50; y = height * 0.08;
+        } else if (role === 'core_switch') {
+          x = width * 0.50; y = height * 0.20;
+        } else if (n.type === 3) { // Services
+          const srvList = ["Srv_DNS_DHCP", "Srv_NFS_Storage", "Srv_License_Mgr", "Srv_Gateway_Proxy"];
+          const idx = srvList.indexOf(n.id);
+          x = width * (0.24 + (idx >= 0 ? idx : 0) * 0.17);
+          y = height * 0.20;
+        } else if (role === 'rack_ups') {
+          x = room.includes('1') ? width * 0.28 : width * 0.72;
+          y = height * 0.36;
+        } else if (role === 'dist_switch') {
+          x = room.includes('1') ? width * 0.40 : width * 0.60;
+          y = height * 0.36;
+        } else if (role === 'row_pdu' || role === 'access_switch') {
+          const isLab1 = room.includes('1');
+          const isRow1 = n.id.includes('Row1');
+          const labBase = isLab1 ? width * 0.28 : width * 0.72;
+          const rowOffset = isRow1 ? -width * 0.11 : width * 0.11;
+          x = labBase + rowOffset;
+          y = (role === 'row_pdu') ? height * 0.52 : height * 0.61;
+        } else if (n.type === 2) { // Workstations
+          const isLab1 = room.includes('1');
+          const matchNum = n.id.match(/\d+$/);
+          const num = matchNum ? parseInt(matchNum[0], 10) : 1;
+          const labBase = isLab1 ? width * 0.28 : width * 0.72;
+          const col = ((num - 1) % 8) - 3.5;
+          const row = Math.floor((num - 1) / 8);
+          x = labBase + col * (width * 0.040);
+          y = height * (0.75 + row * 0.11);
+        }
+        pos[n.id] = { x, y };
+      });
+
+      // Draw Edges
+      graphData.edges.forEach(e => {
+        const p1 = pos[e.source];
+        const p2 = pos[e.target];
+        if (!p1 || !p2) return;
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", p1.x);
+        line.setAttribute("y1", p1.y);
+        line.setAttribute("x2", p2.x);
+        line.setAttribute("y2", p2.y);
+        line.setAttribute("stroke", e.edgeType === 'power_dependency' ? '#F59E0B' : (e.edgeType === 'service_dependency' ? 'rgba(255,255,255,0.1)' : '#3B82F6'));
+        line.setAttribute("stroke-width", e.edgeType === 'power_dependency' ? "1.5" : "1.0");
+        if (e.edgeType === 'power_dependency') line.setAttribute("stroke-dasharray", "4,3");
+        line.setAttribute("opacity", e.edgeType === 'service_dependency' ? "0.2" : "0.5");
+        svg.appendChild(line);
+      });
+
+      // Draw Nodes
+      nodes.forEach(n => {
+        const p = pos[n.id];
+        if (!p) return;
+
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("transform", `translate(${p.x}, ${p.y})`);
+        g.style.cursor = "pointer";
+        g.onclick = () => selectNode(n);
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        let r = n.type === 2 ? 8 : (n.role === 'main_pdu' || n.role === 'core_switch' ? 16 : 12);
+        circle.setAttribute("r", r);
+
+        // Determine color
+        let fill = "#10B981"; // PC green
+        if (failedNodes.includes(n.id)) {
+          fill = "#EF4444"; // Failed red
+        } else if (riskColors && riskColors[n.id]) {
+          const prob = riskColors[n.id];
+          if (prob > 0.6) fill = "#EF4444";
+          else if (prob > 0.35) fill = "#F59E0B";
+          else fill = "#10B981";
+        } else {
+          if (n.type === 0) fill = "#F59E0B"; // Power amber
+          else if (n.type === 1) fill = n.role.includes('core') ? "#2563EB" : "#06B6D4"; // Switch blue/cyan
+          else if (n.type === 3) fill = "#8B5CF6"; // Service purple
+        }
+
+        circle.setAttribute("fill", fill);
+        circle.setAttribute("stroke", "#1E293B");
+        circle.setAttribute("stroke-width", "2");
+
+        // Hover animation
+        circle.onmouseenter = () => { circle.setAttribute("stroke", "#FFFFFF"); circle.setAttribute("stroke-width", "3"); };
+        circle.onmouseleave = () => { circle.setAttribute("stroke", "#1E293B"); circle.setAttribute("stroke-width", "2"); };
+
+        g.appendChild(circle);
+
+        // Label for non-PCs
+        if (n.type !== 2) {
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("y", -r - 4);
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("fill", "#E2E8F0");
+          text.setAttribute("font-size", "10px");
+          text.setAttribute("font-weight", "600");
+          text.setAttribute("font-family", "'Times New Roman', Times, serif");
+          text.textContent = n.id.replace('Switch_', '').replace('Power_', '').replace('Srv_', '');
+          g.appendChild(text);
+        }
+
+        svg.appendChild(g);
+      });
+    }
+
+    function selectNode(node) {
+      selectedNode = node;
+      document.getElementById('selectedNodeBadge').innerText = node.id;
+      
+      const prob = gcnPredictions[node.id] ? (gcnPredictions[node.id].risk_percent + '%') : 'Uncomputed';
+      const severity = gcnPredictions[node.id] ? gcnPredictions[node.id].severity : 'Normal';
+      
+      const content = `
+        <div class="telemetry-row">
+          <span class="telemetry-label">Equipment Name</span>
+          <span class="telemetry-val" style="font-size: 0.8rem;">${node.name}</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Type & Role</span>
+          <span class="telemetry-val">${node.typeName} (${node.role})</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Room / Rack</span>
+          <span class="telemetry-val">${node.room}</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin: 0.75rem 0;">
+        <div class="telemetry-row">
+          <span class="telemetry-label">Temperature</span>
+          <span class="telemetry-val" style="color: ${node.temperature > 65 ? '#EF4444' : '#10B981'};">${node.temperature} °C</span>
+        </div>
+        <div class="gauge-bar"><div class="gauge-fill" style="width: ${Math.min(100, (node.temperature/85)*100)}%; background: ${node.temperature > 65 ? '#EF4444' : '#10B981'};"></div></div>
+        
+        <div class="telemetry-row">
+          <span class="telemetry-label">CPU / Port Load</span>
+          <span class="telemetry-val">${node.load} %</span>
+        </div>
+        <div class="gauge-bar"><div class="gauge-fill" style="width: ${node.load}%; background: var(--accent-blue);"></div></div>
+        
+        <div class="telemetry-row">
+          <span class="telemetry-label">Error Counts (1h)</span>
+          <span class="telemetry-val" style="color: ${node.errors > 20 ? '#EF4444' : '#FFFFFF'};">${node.errors} errors</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Power Draw</span>
+          <span class="telemetry-val">${node.power} W</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Uptime</span>
+          <span class="telemetry-val">${node.uptime} hrs</span>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin: 0.75rem 0;">
+        <div class="telemetry-row">
+          <span class="telemetry-label">GCN Predicted Risk</span>
+          <span class="telemetry-val" style="color: ${prob.startsWith('0') ? '#10B981' : '#F59E0B'}; font-size: 1rem;">${prob}</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Risk Severity</span>
+          <span class="telemetry-val" style="color: ${severity === 'Critical' ? '#EF4444' : (severity === 'Warning' ? '#F59E0B' : '#10B981')}">${severity}</span>
+        </div>
+      `;
+      document.getElementById('inspectorContent').innerHTML = content;
+    }
+
+    async function runGcnInference() {
+      const btn = document.getElementById('btnGcnPredict');
+      btn.innerText = "Running GCN Inference...";
+      try {
+        const res = await fetch('/api/gcn_predict', { method: 'POST' });
+        const data = await res.json();
+        gcnPredictions = data.predictions;
+        
+        const riskProbs = {};
+        for (let k in gcnPredictions) {
+          riskProbs[k] = gcnPredictions[k].risk_score;
+        }
+        
+        document.getElementById('kpiAtRisk').innerText = data.total_at_risk;
+        renderSvgGraph([], riskProbs);
+
+        // Update recommendations
+        if (data.recommendations && data.recommendations.length > 0) {
+          const recHtml = data.recommendations.map(r => `<div class="rec-item critical"><strong>GCN Alert:</strong> ${r}</div>`).join('');
+          document.getElementById('recommendationsList').innerHTML = recHtml;
+        }
+
+        btn.innerText = "GCN Risk Analysis Complete";
+        setTimeout(() => { btn.innerText = "Run GCN Risk Inference"; }, 2500);
+      } catch (err) {
+        console.error("GCN inference error:", err);
+        btn.innerText = "Error Running GCN";
+      }
+    }
+
+    async function triggerCascadeSimulation() {
+      const trigger = document.getElementById('triggerNodeSelect').value;
+      const btn = document.getElementById('btnSimCascade');
+      btn.innerText = "Cascading...";
+
+      try {
+        const res = await fetch('/api/simulate_cascade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trigger_node: trigger })
+        });
+        const data = await res.json();
+
+        // Animate step by step
+        let stepIdx = 0;
+        const interval = setInterval(() => {
+          if (stepIdx < data.step_trace.length) {
+            const trace = data.step_trace[stepIdx];
+            renderSvgGraph(trace.failed_nodes);
+            btn.innerText = `Cascade Step ${trace.step} (${trace.failed_nodes.length} Dead)`;
+            stepIdx++;
+          } else {
+            clearInterval(interval);
+            btn.innerText = `Cascade Terminal: ${data.total_failed} Failed`;
+          }
+        }, 800);
+      } catch (err) {
+        console.error("Simulation error:", err);
+        btn.innerText = "Simulation Error";
+      }
+    }
+
+    function resetGraph() {
+      const btn = document.getElementById('btnReset');
+      if (btn) {
+        btn.innerHTML = `<svg width="15" height="15" class="spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Resetting Laboratory...`;
+      }
+      // Clean page reload so all states, animations, and topology refresh completely
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+
+    window.onload = () => {
+      try {
+        localStorage.removeItem('labguard_autorefresh');
+      } catch (e) {}
+      loadTopology();
+    };
+    window.onresize = () => renderSvgGraph();
+  </script>
+</body>
+</html>

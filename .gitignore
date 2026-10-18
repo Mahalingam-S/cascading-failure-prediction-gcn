@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Caching and environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE & Editor artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Internal Agent & IDE assistant instructions
+.agents/
+AGENTS.md
+
+# Academic course submissions, drafts, and report generation scripts
+*.pdf
+*.docx
+build_*.py
+create_*.py
+generate_word_document.py
+generate_sample_style_plots.py
+generate_report_figures.py
+GraphNodeClassifier.java
+
+# Temporary clones and files
+temp_*/
+tmp/
+*.tmp
