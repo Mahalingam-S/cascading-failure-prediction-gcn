@@ -239,5 +239,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 **Mahalingam Shanmugam**  
 Amrita Vishwa Vidyapeetham  
-Email: [s_mahalingam@cb.amrita.edu](mailto:s_mahalingam@cb.amrita.edu)  
+Email: [mahalingamshanmugam12@gmail.com](mailto:mahalingamshanmugam12@gmail.com) 
+Email: [mahalsansu43@gmail.com](mailto:mahalsansu43@gmail.com)
 GitHub: [@Mahalingam-S](https://github.com/Mahalingam-S)
